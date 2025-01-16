@@ -1,0 +1,21 @@
+services:
+  db:
+    build: ./db/
+    volumes:
+      - /tmp:/logs:rw
+      - ./data/db_master:/var/lib/postgresql/data
+    restart: always
+  db_repl:
+    build: ./db_repl
+    volumes:
+      - ./data/db_slave:/var/lib/postgresql/data
+    depends_on:
+      - db
+      - bot
+    restart: always
+  bot:
+    build: ./bot/
+    volumes:
+      - /tmp:/logs:ro
+    depends_on:
+      - db

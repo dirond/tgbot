@@ -1,0 +1,5 @@
+FROM postgres:13.18-alpine
+ENV POSTGRES_DB=tg_bot
+ENV POSTGRES_HOST_AUTH_METHOD=trust
+COPY ./changecfg.sh /docker-entrypoint-initdb.d
+COPY ./init.sql /docker-entrypoint-initdb.d
