@@ -1,5 +1,6 @@
 FROM python:3.10-alpine
 WORKDIR /code
+ENV AM_I_IN_A_DOCKER_CONTAINER=Yes
 COPY . .
 RUN pip3 install -r requirements.txt
 CMD ["python3", "tg_mon_test.py"]
