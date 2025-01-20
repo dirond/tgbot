@@ -1,7 +1,7 @@
 #!/bin/sh
 #cp -f /docker-entrypoint-initdb.d/my-postgres.conf /var/lib/postgresql/data/postgresql.conf 
 #cp -f /docker-entrypoint-initdb.d/pg_hba.conf /var/lib/postgresql/data/pg_hba.conf 
-echo 'host	replication	postgres	172.19.0.0/16	trust' >> /var/lib/postgresql/data/pg_hba.conf
+echo 'host	replication	postgres	172.0.0.0/8	trust' >> /var/lib/postgresql/data/pg_hba.conf
 
 echo "
 wal_level = replica
@@ -16,4 +16,3 @@ logging_collector = on
 log_directory = '/logs'
 log_filename = 'postgresql.log'
 " >> /var/lib/postgresql/data/postgresql.conf
-whoami
