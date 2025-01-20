@@ -397,13 +397,25 @@ def repl_logs(update: Update, context):
     #client.close()
     
     #data = str(data).replace('\\n','\n').replace('\\t', '\t').replace('\\r','') [2:-1]
-    data = Path('/logs/postgresql.log').read_text()
+    CONTAINER_RUN = os.environ.get('AM_I_IN_A_DOCKER_CONTAINER', False)
+    if CONTAINER_RUN:
+        print('CONT')
+        data = Path('/logs/postgresql.log').read_text()
+        while data:
+            update.message.reply_text(data[:4096])
+            data = data[4096:]
+        return ConversationHandler.END
+    
+    client = linux_conn_logs()
+    stdin, stdout, stderr = client.exec_command('cat /var/log/postgresql/postgresql-13-main.log')
+    data = stdout.read() + stderr.read()
+    client.close()
 
+    data = str(data).replace('\\n','\n').replace('\\t', '\t')[2:-1]
     while data:
         update.message.reply_text(data[:4096])
         data = data[4096:]
     return ConversationHandler.END
-
 
 def linux_conn():
     load_dotenv()
@@ -412,6 +424,18 @@ def linux_conn():
     user = os.getenv('RM_USER')
     password = os.getenv('RM_PASSWORD')
     
+    client = paramiko.SSHClient()
+    client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+    client.connect(host, port, user, password)
+    return client
+
+def linux_conn_logs():
+    load_dotenv()
+    host = os.getenv('DB_HOST')
+    port = '22'
+    user = os.getenv('DB_USER')
+    password = os.getenv('DB_PASSWORD')
+
     client = paramiko.SSHClient()
     client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
     client.connect(host, port, user, password)
