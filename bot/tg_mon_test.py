@@ -449,7 +449,7 @@ def db_conn():
     port = os.getenv('DB_PORT')
     database = os.getenv('DB_DATABASE')
     CONTAINER_RUN = os.environ.get('AM_I_IN_A_DOCKER_CONTAINER', False)
-    if CONTAINER_RUN:
+    if not CONTAINER_RUN:
         host = os.getenv('DB_NET_HOST')
     try:
         connection = psycopg2.connect(user=user, password=password, host=host, port=port, database=database)
