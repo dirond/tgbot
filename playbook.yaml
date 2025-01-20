@@ -130,7 +130,7 @@
   tasks:
     
     - name: Clone programm
-      shell: "git clone https://github.com/dirond/tgbot/ && cd tgbot && git checkout github && cd bot"
+      shell: "git clone https://github.com/dirond/tgbot/ && cd tgbot && git checkout docker && cd bot"
 
     - name: Run pip3 install
       shell: "pip3 install -r /home/ansible/tgbot/bot/requirements.txt"
