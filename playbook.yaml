@@ -1,0 +1,136 @@
+- name: Prepare Software
+  hosts: host02,host03    # playbook запустится для всех хостов в inventory.
+  become: yes   # команда позволяет ansible использовать права root.
+  
+  tasks:        # ниже начинается список задач. Обратите внимание, tasks во множественном числе. Иначе получим ошибку при выполнении плейбука
+
+  - name: Installing package
+    apt:                 # используем модуль apt для установки утилит vim и mc.
+      name:
+        - postgresql
+        - postgresql-contrib
+        - acl
+      state: latest      # версия пакета, которую мы хотим установить.  
+  
+  - name: Change postgres password
+    user:
+      name: postgres
+      password: "{{ 'P@$$w0rd' | password_hash('sha512') }}"
+
+- name: Prepare main DB node. Coping files
+  hosts: host02
+  become: yes
+
+  tasks:
+
+  - name: Coping pg_hba.conf
+    copy:
+      src: ./pg_hba.conf
+      dest: /etc/postgresql/13/main/pg_hba.conf
+      force: yes
+    
+  - name: Coping postgresql.conf
+    copy:
+      src: ./postgresql.conf
+      dest: /etc/postgresql/13/main/postgresql.conf
+      force: yes
+  
+  - name: Coping sql dump
+    copy:
+      src: ./db.dump
+      dest: /tmp/db.dump
+
+  - name: Restart postgresql.service
+    systemd:
+      name: postgresql
+      state: restarted
+      enabled: yes
+
+    
+- name: Prepare main DB node. Restore DB
+  hosts: host02
+  become: yes
+  become_user: postgres
+
+  tasks:
+    
+  - name: Backup DB
+    shell: "pg_restore -C -d postgres /tmp/db.dump"
+
+- name: Prepare seconadry DB node
+  hosts: host03
+  become: yes
+
+  tasks:
+
+  - name: Stop postgresql
+    systemd:
+      name: postgresql
+      state: stopped
+      enabled: no
+  
+  - name: Clear Data before recovering
+    file:
+      state: absent
+      path: /var/lib/postgresql/13/main
+
+- name: recovery DB
+  hosts: host03
+  become: yes
+  become_user: postgres
+
+  tasks: 
+
+  - name: Recovery DB
+    shell: "pg_basebackup -R -h {{ hostvars['host02'].ansible_host  }} -U postgres -D /var/lib/postgresql/13/main -P"
+
+      #  - name: Find all files
+      #    find:
+      #      path: /var/lib/postgres/13/main
+      #      file_type: any
+      #      recurse: true
+      #      register: folder_contents
+      #  
+      #  - name: Chown files
+      #    file:
+      #      path: "{{ item.path  }}"
+      #      owner: postgres
+      #      group: postgres
+      #    loop: "{{ folder_contents.files  }}"
+- name: Almost Done
+  hosts: host03
+  become: yes
+  
+  tasks:
+
+  - name: Start postgresql
+    systemd:
+      name: postgresql
+      state: started
+      enabled: yes
+
+
+- name: Prepare Bot
+  hosts: host01
+  become: yes
+
+  tasks:
+
+  - name: Install git
+    apt:
+      name:
+        - git
+      state: latest
+
+
+- name: Prepare depends
+  hosts: host01
+  become: yes
+  
+  tasks:
+    
+    - name: Clone programm
+      shell: "git clone https://github.com/dirond/tgbot/ && cd tgbot && git checkout github && cd bot"
+
+    - name: Run pip3 install
+      shell: "pip3 install -r /home/ansible/tgbot/bot/requirements.txt"
